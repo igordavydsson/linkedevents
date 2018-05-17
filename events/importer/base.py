@@ -29,7 +29,6 @@ class Importer(object):
         self._images = {obj.url: obj for obj in Image.objects.all()}
         self.options = options
         self.verbosity = options['verbosity']
-        self.logger = logging.getLogger(__name__)
 
         importer_langs = set(self.supported_languages)
         configured_langs = set(l[0] for l in settings.LANGUAGES)
@@ -124,7 +123,7 @@ class Importer(object):
 
     def _set_field(self, obj, field_name, val):
         if not hasattr(obj, field_name):
-            print(vars(obj))
+            logging.debug(vars(obj))
         obj_val = getattr(obj, field_name)
         # this prevents overwriting manually edited values with empty values
         if obj_val == val or (hasattr(obj, 'is_user_edited') and obj.is_user_edited() and not val):
@@ -228,7 +227,7 @@ class Importer(object):
                 try:
                     license_object = License.objects.get(id=license_id)
                 except License.DoesNotExist:
-                    print('Invalid license id "%s" image %s event %s' % (license_id, image_url, obj))
+                    logging.warning('Invalid license id "%s" image %s event %s' % (license_id, image_url, obj))
                     return
                 image_object.license = license_object
                 image_object.save(update_fields=('license',))
@@ -241,7 +240,7 @@ class Importer(object):
             try:
                 obj.save()
             except ValidationError as error:
-                print('Event ' + str(obj) + ' could not be saved: ' + str(error))
+                logging.error('Event ' + str(obj) + ' could not be saved: ' + str(error))
                 raise
 
         # many-to-many fields
@@ -322,7 +321,7 @@ class Importer(object):
                 verb = "created"
             else:
                 verb = "changed"
-            print("%s %s" % (obj, verb))
+            logging.debug("%s %s" % (obj, verb))
 
         return obj
 
@@ -352,7 +351,7 @@ class Importer(object):
                     p.transform(self.gps_to_target_ct)
                 position = p
             else:
-                print("Invalid coordinates (%f, %f) for %s" % (n, e, obj))
+                logging.warning("Invalid coordinates (%f, %f) for %s" % (n, e, obj))
 
         if position and obj.position:
             # If the distance is less than 10cm, assume the position
@@ -376,7 +375,7 @@ class Importer(object):
                 verb = "created"
             else:
                 verb = "changed"
-            print("%s %s" % (obj, verb))
+            logging.debug("%s %s" % (obj, verb))
             obj.save()
 
         return obj
